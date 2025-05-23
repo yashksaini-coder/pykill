@@ -12,16 +12,13 @@ pub struct VenvInfo {
 
 impl VenvInfo {
     pub fn new(path: PathBuf) -> Option<Self> {
-        // Check if this is really a virtualenv
         let pyvenv_cfg = path.join("pyvenv.cfg");
         if !pyvenv_cfg.exists() {
             return None;
         }
 
-        // Calculate size
         let size = get_dir_size(&path).unwrap_or(0);
 
-        // Get last modified time
         let metadata = fs::metadata(&path).ok()?;
         let modified = metadata.modified().ok()
             .and_then(|t| DateTime::<Local>::from(t).into());
@@ -34,7 +31,6 @@ impl VenvInfo {
     }
 }
 
-/// Scan a directory recursively for potential Python virtualenv folders
 pub fn scan_for_venvs(root: &Path) -> Vec<VenvInfo> {
     let mut results = Vec::new();
 
@@ -44,7 +40,7 @@ pub fn scan_for_venvs(root: &Path) -> Vec<VenvInfo> {
         }
 
         let name = entry.file_name().to_string_lossy().to_lowercase();
-        if name == "venv" || name == ".venv" || name == "env" {
+        if name == "venv" || name == ".venv" || name == "env" || name == "virtualenv" || name == "pyenv" || name ==".env" {
             if let Some(venv) = VenvInfo::new(entry.path().to_path_buf()) {
                 results.push(venv);
             }
@@ -54,7 +50,6 @@ pub fn scan_for_venvs(root: &Path) -> Vec<VenvInfo> {
     results
 }
 
-/// Recursively calculate directory size in bytes
 fn get_dir_size(path: &Path) -> Result<u64, std::io::Error> {
     let mut size = 0;
 
