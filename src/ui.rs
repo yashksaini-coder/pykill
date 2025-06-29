@@ -84,20 +84,32 @@ pub fn draw_ui(f: &mut Frame, app: &App) {
         if let Some(idx) = app.venv_to_delete_idx {
             if let Some(venv_to_delete) = app.venvs.get(idx) {
                 let dialog_block = Block::default()
-                    .title("Confirm Deletion")
+                    .title("⚠ Confirm Deletion")
                     .borders(Borders::ALL)
-                    .style(Style::default().fg(Color::Red)); // Optional: style the dialog
+                    .style(Style::default().fg(Color::Red));
 
                 let path_str = venv_to_delete.path.display().to_string();
-                let confirmation_text = format!(
-                    "Are you sure you want to delete '{}'? (y/n)",
-                    path_str
-                );
-                let dialog_paragraph = Paragraph::new(confirmation_text)
+                let confirmation_lines = vec![
+                    Line::from(""),
+                    Line::from(Span::styled("Are you sure you want to delete:", Style::default().fg(Color::White))),
+                    Line::from(""),
+                    Line::from(Span::styled(path_str, Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))),
+                    Line::from(""),
+                    Line::from(vec![
+                        Span::styled("Press ", Style::default().fg(Color::White)),
+                        Span::styled("Y", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
+                        Span::styled(" to confirm or ", Style::default().fg(Color::White)),
+                        Span::styled("N", Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)),
+                        Span::styled(" to cancel", Style::default().fg(Color::White)),
+                    ]),
+                    Line::from(""),
+                ];
+                
+                let dialog_paragraph = Paragraph::new(confirmation_lines)
                     .block(dialog_block)
                     .alignment(ratatui::layout::Alignment::Center);
 
-                let area = centered_rect(60, 20, f.size()); // 60% width, 20% height
+                let area = centered_rect(70, 30, f.size()); // Slightly larger dialog
                 f.render_widget(Clear, area); // Clear the area before rendering
                 f.render_widget(dialog_paragraph, area);
             }

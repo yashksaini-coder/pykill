@@ -1,62 +1,117 @@
 # pykill
 
-pykill is a Rust-based utility (currently in early development) designed to scan projects for Python virtual environments. The goal is to provide a fast, cross-platform tool with a terminal user interface (TUI) for managing and potentially cleaning up Python virtual environments within a given directory tree.
+A cross-platform TUI tool for finding and deleting Python virtual environments.
 
-## Features (Planned)
-- **Scan for Python Virtual Environments:** Detect virtual environments in a project using Python's `sys.prefix` or directory heuristics.
-- **Terminal User Interface:** Built with [ratatui](https://crates.io/crates/ratatui) and [crossterm](https://crates.io/crates/crossterm) for a modern, interactive TUI experience.
-- **Project Navigation:** Easily browse and select directories to scan.
-- **Environment Management:** (Planned) List, inspect, and optionally remove unused or large virtual environments.
+## Features
 
-## Status
-This project is in the early stages. Most modules are placeholders with TODOs for future implementation.
+*   **Interactive TUI:** A user-friendly terminal interface for navigating and managing Python virtual environments.
+*   **Cross-Platform:** Works on Linux, Windows, and macOS.
+*   **Virtual Environment Detection:** Scans directories to find common Python virtual environment folders (e.g., `venv`, `.venv`, `env`).
+*   **Interactive Deletion:** Safely delete virtual environments with a confirmation step.
+*   **Command-Line Mode:** Option to list virtual environments without launching the TUI.
+*   **Fast Scanning:** Built in Rust for efficient directory traversal and analysis.
 
-## Dependencies
-- [ratatui](https://crates.io/crates/ratatui) - TUI rendering
-- [crossterm](https://crates.io/crates/crossterm) - Terminal handling
-- [walkdir](https://crates.io/crates/walkdir) - Recursive directory traversal
-- [humansize](https://crates.io/crates/humansize) - Human-readable file sizes
-- [chrono](https://crates.io/crates/chrono) - Date and time utilities
+## Installation
+
+### From Releases (Recommended)
+
+You can download pre-compiled binaries for your operating system from the GitHub Releases page:
+
+[https://github.com/YOUR_GITHUB_USER/YOUR_REPO_NAME/releases](https://github.com/YOUR_GITHUB_USER/YOUR_REPO_NAME/releases)
+
+Binaries are typically provided for Linux, Windows, and macOS (x86_64 and aarch64). Download the appropriate archive for your system, extract it, and place the `pykill` executable in a directory included in your system's PATH.
+
+### From Source
+
+If you have Rust and Cargo installed, you can build `pykill` from source.
+
+1.  **Install via `cargo install` (recommended for source installs):**
+    ```bash
+    cargo install --git https://github.com/YOUR_GITHUB_USER/YOUR_REPO_NAME.git
+    ```
+    This will build and install the `pykill` binary into your Cargo bin directory (e.g., `~/.cargo/bin/pykill`).
+
+2.  **Manual Build:**
+    Alternatively, you can clone the repository and build it manually:
+    ```bash
+    git clone https://github.com/YOUR_GITHUB_USER/YOUR_REPO_NAME.git
+    cd YOUR_REPO_NAME 
+    cargo build --release
+    ```
+    The binary will be located at `target/release/pykill`. You can then copy this to a location in your PATH.
 
 ## Usage
-1. **Build the project:**
-   ```sh
-   cargo build --release
-   ```
-2. **Run the project:**
-   ```sh
-   cargo run -- <project_path>
-   ```
-   (Note: Functionality is not yet implemented; running will only print "Hello, world!" for now.)
+
+### TUI Mode (Default)
+
+To start `pykill` in its interactive TUI mode, simply run the command:
+
+```bash
+pykill
+```
+
+This will scan the current directory for virtual environments.
+
+You can also specify a path to scan:
+
+```bash
+pykill /path/to/your/projects
+```
+
+**Keybindings:**
+
+*   **`↑` / `↓`**: Navigate up and down the list of detected virtual environments.
+*   **`d`**: Mark the currently selected virtual environment for deletion. This will open a confirmation dialog.
+*   **`y`**: (In confirmation dialog) Confirm the deletion of the virtual environment.
+*   **`n`**: (In confirmation dialog) Cancel the deletion and close the dialog.
+*   **`q`**: Quit the application. This works in both the main list view and the confirmation dialog.
+
+### Command-Line Mode
+
+If you prefer to get a simple list of virtual environments printed to your terminal without the TUI, use the `--no-tui` flag.
+
+*   Scan the current directory:
+    ```bash
+    pykill --no-tui
+    ```
+
+*   Scan a specific directory:
+    ```bash
+    pykill /path/to/your/projects --no-tui
+    ```
+
+The output will list the path, size, and last modified date for each detected virtual environment.
+
+## Building from Source
+
+If you wish to contribute or build the latest version yourself:
+
+1.  **Prerequisites:**
+    *   Ensure you have Rust and Cargo installed. You can get them from [rustup.rs](https://rustup.rs/).
+
+2.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/YOUR_GITHUB_USER/YOUR_REPO_NAME.git
+    ```
+
+3.  **Navigate to the directory:**
+    ```bash
+    cd YOUR_REPO_NAME 
+    ```
+    (Note: If the repository is named `pykill`, you would `cd pykill`)
+
+4.  **Build the release binary:**
+    ```bash
+    cargo build --release
+    ```
+
+5.  **Run the binary:**
+    The executable will be located at `target/release/pykill`.
 
 ## Contributing
-Contributions are welcome! Please open issues or pull requests to discuss features or report bugs.
 
----
-<a href="https://github.com/yashksaini-coder">
-    <table>
-        <tbody>
-            <tr>
-                <td align="left" valign="top" width="14.28%">
-                    <img src="https://github.com/yashksaini-coder.png?s=60" width="130px;"/>
-                    <br/>
-                    <h4 align="center">
-                        <b>Yash K. Saini</b>
-                    </h4>
-                    <div align="center">
-                        <p>(Author)</p>
-                    </div>
-                </td>
-                <td align="left" valign="top" width="85%">
-                    <p>
-                        👋 Hi there! I'm <u><em><strong>Yash K. Saini</strong></em></u>, a self-taught software developer and a computer science student from India.
-                    </p>
-                    <ul>
-                     <li>
-                        Building products & systems that can benefit & solve problems for many other DEVs.
-                    </li>
-                </td>
-            </tr>
-        </tbody>
-    </table>
-</a>
+Contributions are welcome! If you have suggestions, feature requests, or bug reports, please open an issue or submit a pull request on the GitHub repository.
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file for details (if one is present, otherwise assume MIT).

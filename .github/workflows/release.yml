@@ -1,0 +1,140 @@
+name: Release Build and Upload
+
+on:
+  push:
+    branches:
+      - main
+      - master # In case the default branch is master
+    tags:
+      - 'v*' # Trigger on version tags like v0.1.0
+
+jobs:
+  build_and_release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Define targets to build for
+        # Note: aarch64-apple-darwin might require specific setup or a newer cross version
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: linux
+            ext: ""
+            archive_ext: ".tar.gz"
+            artifact_name_suffix: "linux-x86_64"
+          - target: x86_64-pc-windows-gnu
+            os: windows
+            ext: ".exe"
+            archive_ext: ".zip"
+            artifact_name_suffix: "windows-x86_64"
+          - target: x86_64-apple-darwin
+            os: macos
+            ext: ""
+            archive_ext: ".tar.gz" # Using .tar.gz for macOS, .zip is also common
+            artifact_name_suffix: "macos-x86_64"
+          - target: aarch64-apple-darwin
+            os: macos
+            ext: ""
+            archive_ext: ".tar.gz"
+            artifact_name_suffix: "macos-aarch64"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy # Optional: add if you use them in build/test
+
+      - name: Install cross
+        run: cargo install cross --git https://github.com/cross-rs/cross --branch main
+        # For a specific released version, e.g., cargo install cross --version 0.2.5
+
+      - name: Build binary with cross
+        run: cross build --target ${{ matrix.target }} --release
+        env:
+          # For aarch64-apple-darwin, you might need to set specific linkers or SDKs
+          # See cross-rs documentation if this target fails.
+          # Example (might not be needed or correct for all setups):
+          # CFLAGS_aarch64_apple_darwin: "-mmacosx-version-min=10.7" 
+          # CXXFLAGS_aarch64_apple_darwin: "-mmacosx-version-min=10.7"
+          # For some targets, you might need to specify a Docker image for cross
+          # CROSS_CONTAINER_ENGINE: docker # or podman
+          # CROSS_IMAGE_aarch64_apple_darwin: your-custom-image-for-macos-arm
+          CARGO_TERM_COLOR: always # Ensure colors in cargo output
+
+      - name: Prepare artifact name and binary path
+        id: prep_artifact
+        run: |
+          BINARY_NAME="pykill"
+          TARGET_DIR="target/${{ matrix.target }}/release"
+          BASE_ARTIFACT_NAME="${BINARY_NAME}-${{ matrix.target }}"
+          RENAMED_BINARY="${BINARY_NAME}-${{ matrix.target }}${{ matrix.ext }}"
+          
+          echo "Original binary path: ${TARGET_DIR}/${BINARY_NAME}"
+          echo "Renamed binary: ${RENAMED_BINARY}"
+          
+          mv "${TARGET_DIR}/${BINARY_NAME}" "${TARGET_DIR}/${RENAMED_BINARY}"
+          
+          echo "binary_path=${TARGET_DIR}/${RENAMED_BINARY}" >> $GITHUB_OUTPUT
+          echo "artifact_filename=${BASE_ARTIFACT_NAME}${matrix.archive_ext}" >> $GITHUB_OUTPUT
+          echo "renamed_binary_name=${RENAMED_BINARY}" >> $GITHUB_OUTPUT
+
+
+      - name: Package binary (Linux/macOS - tar.gz)
+        if: runner.os == 'Linux' && (matrix.os == 'linux' || matrix.os == 'macos')
+        run: |
+          tar -czvf ${{ steps.prep_artifact.outputs.artifact_filename }} -C target/${{ matrix.target }}/release ${{ steps.prep_artifact.outputs.renamed_binary_name }}
+          echo "Packaged ${{ steps.prep_artifact.outputs.artifact_filename }}"
+
+      - name: Package binary (Windows - zip)
+        if: runner.os == 'Linux' && matrix.os == 'windows' # Still run on Linux, but package for Windows
+        run: |
+          zip -j ${{ steps.prep_artifact.outputs.artifact_filename }} target/${{ matrix.target }}/release/${{ steps.prep_artifact.outputs.renamed_binary_name }}
+          echo "Packaged ${{ steps.prep_artifact.outputs.artifact_filename }}"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pykill-${{ matrix.artifact_name_suffix }} # e.g., pykill-linux-x86_64
+          path: ${{ steps.prep_artifact.outputs.artifact_filename }}
+
+  # This job depends on all matrix builds completing successfully
+  create_release:
+    name: Create GitHub Release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build_and_release # Ensure build job (all matrix variations) is complete
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to create releases
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        # No 'name' specified downloads all artifacts from the workflow run
+        # into a directory named after each artifact
+        with:
+          path: artifacts/ # All artifacts will be in subdirectories here
+
+      - name: List downloaded artifacts (for debugging)
+        run: ls -R artifacts/
+
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          # token: ${{ secrets.GITHUB_TOKEN }} # Implicitly available
+          files: |
+            artifacts/pykill-linux-x86_64/*.tar.gz
+            artifacts/pykill-windows-x86_64/*.zip
+            artifacts/pykill-macos-x86_64/*.tar.gz
+            artifacts/pykill-macos-aarch64/*.tar.gz
+          # body_path: CHANGELOG.md # Optional: if you have a changelog
+          # draft: false # Optional: set to true to create a draft release
+          # prerelease: false # Optional: set to true for pre-releases
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The GITHUB_TOKEN is automatically available to the workflow.
+          # softprops/action-gh-release uses it by default.
+```
