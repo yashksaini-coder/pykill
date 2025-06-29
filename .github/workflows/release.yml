@@ -137,4 +137,3 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # The GITHUB_TOKEN is automatically available to the workflow.
           # softprops/action-gh-release uses it by default.
-```
